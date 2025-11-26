@@ -1,0 +1,94 @@
+@import 'sn-extension-api/dist/sn.min.css';
+
+:root {
+  --spreadsheet-bg: var(--sn-stylekit-background-color, #ffffff);
+  --spreadsheet-fg: var(--sn-stylekit-foreground-color, #1a1a2e);
+  --spreadsheet-border: var(--sn-stylekit-border-color, #e0e0e0);
+  --spreadsheet-accent: var(--sn-stylekit-info-color, #3b82f6);
+  --spreadsheet-header-bg: var(--sn-stylekit-contrast-background-color, #f8f9fa);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body,
+html {
+  background-color: var(--spreadsheet-bg);
+  color: var(--spreadsheet-fg);
+  font-family: var(--sn-stylekit-sans-serif-font, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
+  font-size: var(--sn-stylekit-font-size-editor, 14px);
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  overflow: hidden;
+}
+
+#root {
+  height: 100%;
+  width: 100%;
+}
+
+.spreadsheet-container {
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--spreadsheet-bg);
+}
+
+.spreadsheet-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 16px;
+  color: var(--spreadsheet-fg);
+  opacity: 0.7;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--spreadsheet-border);
+  border-top-color: var(--spreadsheet-accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spreadsheet-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 12px;
+  color: var(--sn-stylekit-danger-color, #ef4444);
+}
+
+.error-icon {
+  font-size: 32px;
+}
+
+/* IronCalc Workbook Overrides to match Standard Notes theme */
+.ironcalc-workbook {
+  height: 100% !important;
+  width: 100% !important;
+  background: var(--spreadsheet-bg) !important;
+}
+
+/* Ensure the workbook fills the container */
+.spreadsheet-container>div {
+  flex: 1;
+  min-height: 0;
+}
