@@ -1,0 +1,11 @@
+{
+  "identifier": "dev.iamanaws.ironcalc",
+  "name": "IronCalc",
+  "content_type": "SN|Component",
+  "area": "editor-editor",
+  "version": "0.1.0",
+  "description": "Spreadsheet editor powered by IronCalc",
+  "url": "https://iamanaws.github.io/sn-ironcalc/",
+  "download_url": "https://iamanaws.github.io/sn-ironcalc/latest.zip",
+  "latest_url": "https://iamanaws.github.io/sn-ironcalc/ext.json"
+}
