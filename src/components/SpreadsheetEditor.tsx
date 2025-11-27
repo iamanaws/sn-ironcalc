@@ -12,9 +12,9 @@ interface SpreadsheetEditorProps {
   noteVersion: number;
 }
 
-const SAVE_DEBOUNCE_MS = 300;
-const AUTO_SAVE_MS = 2000;
-const INTERACTION_EVENTS = ['click', 'keyup', 'input', 'change', 'focusout', 'mouseup'] as const;
+// Events that indicate a cell edit was committed (not mid-typing)
+// 'change' fires when input value is committed, 'focusout' catches cell deselection
+const COMMIT_EVENTS = ['change', 'focusout'] as const;
 
 const SpreadsheetEditor: React.FC<SpreadsheetEditorProps> = ({ noteVersion }) => {
   const [isLoading, setIsLoading] = useState(true);
@@ -22,10 +22,9 @@ const SpreadsheetEditor: React.FC<SpreadsheetEditorProps> = ({ noteVersion }) =>
   const [model, setModel] = useState<Model | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
-  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const loadedVersionRef = useRef(-1);
-  const isDirtyRef = useRef(false);
   const canSaveRef = useRef(false);
+  const lastSavedBytesRef = useRef<string | null>(null);
 
   // Parse stored content
   const parseContent = useCallback((text: string | undefined): SpreadsheetData | null => {
@@ -52,35 +51,42 @@ const SpreadsheetEditor: React.FC<SpreadsheetEditorProps> = ({ noteVersion }) =>
     return new Model('Spreadsheet', 'en', 'UTC');
   }, [parseContent]);
 
-  // Save workbook (only if dirty and saves are enabled)
+  // Save workbook
   const save = useCallback(() => {
-    if (!model || !canSaveRef.current || !isDirtyRef.current) return;
+    if (!model || !canSaveRef.current) return;
 
     try {
       const bytes = model.toBytes();
+      const base64 = btoa(String.fromCharCode(...bytes));
+
+      // Only save if data actually changed (prevents saves on cell navigation)
+      if (base64 === lastSavedBytesRef.current) return;
+
       snApi.text = JSON.stringify({
-        workbook: btoa(String.fromCharCode(...bytes)),
+        workbook: base64,
         version: 1,
       });
-      isDirtyRef.current = false;
+      lastSavedBytesRef.current = base64;
     } catch (err) {
       console.error('Failed to save:', err);
     }
   }, [model]);
 
-  // Mark dirty and schedule debounced save
-  const markDirtyAndSave = useCallback(() => {
-    isDirtyRef.current = true;
-    clearTimeout(saveTimeoutRef.current);
-    saveTimeoutRef.current = setTimeout(save, SAVE_DEBOUNCE_MS);
-  }, [save]);
-
   // Helper to load a note and enable saving after delay
   const loadNote = useCallback((version: number) => {
     canSaveRef.current = false;
-    isDirtyRef.current = false;
     loadedVersionRef.current = version;
-    setModel(loadModel(snApi.text));
+    const loadedModel = loadModel(snApi.text);
+
+    // Store initial bytes to detect actual changes later
+    try {
+      const bytes = loadedModel.toBytes();
+      lastSavedBytesRef.current = btoa(String.fromCharCode(...bytes));
+    } catch {
+      lastSavedBytesRef.current = null;
+    }
+
+    setModel(loadedModel);
     setTimeout(() => { canSaveRef.current = true; }, 500);
   }, [loadModel]);
 
@@ -110,39 +116,31 @@ const SpreadsheetEditor: React.FC<SpreadsheetEditorProps> = ({ noteVersion }) =>
     loadNote(noteVersion);
   }, [noteVersion, isLoading, loadNote]);
 
-  // Auto-save interval
+  // Save on blur/unload (safety net)
   useEffect(() => {
-    if (!model) return;
-    const interval = setInterval(save, AUTO_SAVE_MS);
-    return () => clearInterval(interval);
-  }, [model, save]);
-
-  // Save on blur/unload
-  useEffect(() => {
-    const onUnload = () => { clearTimeout(saveTimeoutRef.current); save(); };
     const onVisibility = () => { if (document.hidden) save(); };
 
-    window.addEventListener('beforeunload', onUnload);
+    window.addEventListener('beforeunload', save);
     document.addEventListener('visibilitychange', onVisibility);
 
     return () => {
-      window.removeEventListener('beforeunload', onUnload);
+      window.removeEventListener('beforeunload', save);
       document.removeEventListener('visibilitychange', onVisibility);
     };
   }, [save]);
 
-  // Capture user interactions to trigger saves
+  // Save when cell edits are committed
+  // Using bubble phase to avoid interfering with IronCalc's clipboard handling
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
-    INTERACTION_EVENTS.forEach(e => container.addEventListener(e, markDirtyAndSave, true));
+    COMMIT_EVENTS.forEach(e => container.addEventListener(e, save));
 
     return () => {
-      INTERACTION_EVENTS.forEach(e => container.removeEventListener(e, markDirtyAndSave, true));
-      clearTimeout(saveTimeoutRef.current);
+      COMMIT_EVENTS.forEach(e => container.removeEventListener(e, save));
     };
-  }, [markDirtyAndSave]);
+  }, [save]);
 
   if (isLoading) {
     return (

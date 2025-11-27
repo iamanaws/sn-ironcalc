@@ -3,6 +3,8 @@
   "name": "IronCalc",
   "content_type": "SN|Component",
   "area": "editor-editor",
+  "note_type": "spreadsheet",
+  "file_type": "json",
   "version": "$VERSION$",
   "description": "Spreadsheet editor powered by IronCalc",
   "url": "https://iamanaws.github.io/sn-ironcalc/",

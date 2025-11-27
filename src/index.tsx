@@ -19,7 +19,7 @@ export const rerenderRoot = () => {
 };
 
 snApi.initialize({
-  debounceSave: 400  // Shorter debounce for more responsive saves
+  debounceSave: 400
 });
 
 snApi.subscribe(() => {
