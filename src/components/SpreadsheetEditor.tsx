@@ -10,13 +10,13 @@ interface SpreadsheetData {
 
 interface SpreadsheetEditorProps {
   noteVersion: number;
+  noteText?: string;
 }
 
-// Events that indicate a cell edit was committed (not mid-typing)
-// 'change' fires when input value is committed, 'focusout' catches cell deselection
-const COMMIT_EVENTS = ['change', 'focusout'] as const;
+// Events that indicate a cell edit was committed
+const COMMIT_EVENTS = ['change'] as const;
 
-const SpreadsheetEditor: React.FC<SpreadsheetEditorProps> = ({ noteVersion }) => {
+const SpreadsheetEditor: React.FC<SpreadsheetEditorProps> = ({ noteVersion, noteText }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [model, setModel] = useState<Model | null>(null);
@@ -73,10 +73,10 @@ const SpreadsheetEditor: React.FC<SpreadsheetEditorProps> = ({ noteVersion }) =>
   }, [model]);
 
   // Helper to load a note and enable saving after delay
-  const loadNote = useCallback((version: number) => {
+  const loadNote = useCallback((version: number, content: string | undefined) => {
     canSaveRef.current = false;
     loadedVersionRef.current = version;
-    const loadedModel = loadModel(snApi.text);
+    const loadedModel = loadModel(content);
 
     // Store initial bytes to detect actual changes later
     try {
@@ -98,7 +98,7 @@ const SpreadsheetEditor: React.FC<SpreadsheetEditorProps> = ({ noteVersion }) =>
       try {
         await init();
         if (!mounted) return;
-        loadNote(noteVersion);
+        // Wait for first streamed note text before loading the model
       } catch (err) {
         console.error('Init failed:', err);
         if (mounted) setError('Failed to initialize spreadsheet engine');
@@ -112,9 +112,11 @@ const SpreadsheetEditor: React.FC<SpreadsheetEditorProps> = ({ noteVersion }) =>
 
   // Handle note switches
   useEffect(() => {
-    if (isLoading || noteVersion === loadedVersionRef.current) return;
-    loadNote(noteVersion);
-  }, [noteVersion, isLoading, loadNote]);
+    if (isLoading) return;
+    if (noteText === undefined) return; // Wait until Standard Notes streams the note
+    if (noteVersion === loadedVersionRef.current) return;
+    loadNote(noteVersion, noteText);
+  }, [noteVersion, noteText, isLoading, loadNote]);
 
   // Save on blur/unload (safety net)
   useEffect(() => {
