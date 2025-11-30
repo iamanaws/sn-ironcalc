@@ -15,6 +15,7 @@ interface SpreadsheetEditorProps {
 
 // Events that could indicate model changes
 const SAVE_TRIGGER_EVENTS = ['mouseup', 'keyup', 'change'] as const;
+const GLOBAL_SAVE_EVENTS = ['pointerup', 'mouseup', 'keydown', 'keyup', 'paste', 'cut'] as const;
 
 const SpreadsheetEditor: React.FC<SpreadsheetEditorProps> = ({ noteVersion, noteText }) => {
   const [isLoading, setIsLoading] = useState(true);
@@ -129,6 +130,18 @@ const SpreadsheetEditor: React.FC<SpreadsheetEditorProps> = ({ noteVersion, note
     return () => {
       window.removeEventListener('beforeunload', save);
       document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, [save]);
+
+  // Global listeners (capture) to catch drag-fill and deletion keys even if events don't bubble
+  useEffect(() => {
+    const afterEvent = () => {
+      // Run after IronCalc processes the event
+      requestAnimationFrame(() => save());
+    };
+    GLOBAL_SAVE_EVENTS.forEach(e => document.addEventListener(e, afterEvent, true));
+    return () => {
+      GLOBAL_SAVE_EVENTS.forEach(e => document.removeEventListener(e, afterEvent, true));
     };
   }, [save]);
 
