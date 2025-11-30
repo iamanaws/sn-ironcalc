@@ -13,8 +13,8 @@ interface SpreadsheetEditorProps {
   noteText?: string;
 }
 
-// Events that indicate a cell edit was committed
-const COMMIT_EVENTS = ['change'] as const;
+// Events that could indicate model changes
+const SAVE_TRIGGER_EVENTS = ['mouseup', 'keyup', 'change'] as const;
 
 const SpreadsheetEditor: React.FC<SpreadsheetEditorProps> = ({ noteVersion, noteText }) => {
   const [isLoading, setIsLoading] = useState(true);
@@ -66,6 +66,7 @@ const SpreadsheetEditor: React.FC<SpreadsheetEditorProps> = ({ noteVersion, note
         workbook: base64,
         version: 1,
       });
+      snApi.preview = 'IronCalc Spreadsheet';
       lastSavedBytesRef.current = base64;
     } catch (err) {
       console.error('Failed to save:', err);
@@ -131,33 +132,32 @@ const SpreadsheetEditor: React.FC<SpreadsheetEditorProps> = ({ noteVersion, note
     };
   }, [save]);
 
-  // Save when cell edits are committed
-  // Using bubble phase to avoid interfering with IronCalc's clipboard handling
+  // Save on user interactions - byte comparison prevents unnecessary saves
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
-    COMMIT_EVENTS.forEach(e => container.addEventListener(e, save));
+    SAVE_TRIGGER_EVENTS.forEach(e => container.addEventListener(e, save));
 
     return () => {
-      COMMIT_EVENTS.forEach(e => container.removeEventListener(e, save));
+      SAVE_TRIGGER_EVENTS.forEach(e => container.removeEventListener(e, save));
     };
   }, [save]);
 
-  if (isLoading) {
+  if (error) {
     return (
-      <div className="spreadsheet-loading">
-        <div className="loading-spinner" />
-        <span>Loading spreadsheet...</span>
+      <div className="spreadsheet-error">
+        <span className="error-icon">⚠️</span>
+        <span>{error}</span>
       </div>
     );
   }
 
-  if (error || !model) {
+  if (isLoading || !model) {
     return (
-      <div className="spreadsheet-error">
-        <span className="error-icon">⚠️</span>
-        <span>{error || 'Failed to create spreadsheet model'}</span>
+      <div className="spreadsheet-loading">
+        <div className="loading-spinner" />
+        <span>Loading spreadsheet...</span>
       </div>
     );
   }
