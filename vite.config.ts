@@ -31,7 +31,15 @@ export default defineConfig(({ command }) => {
       rollupOptions: {
         external: ['filesafe-js'],
         input: rollupInput,
+        output: {
+          // Split large deps so index/demo share cached chunks
+          manualChunks: {
+            vendor: ['react', 'react-dom', 'sn-extension-api'],
+            ironcalc: ['@ironcalc/workbook'],
+          },
+        },
       },
+      reportCompressedSize: false,
     },
     plugins: [
       react(),
