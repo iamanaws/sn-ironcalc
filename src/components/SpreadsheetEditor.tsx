@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useCallback, useState } from 'react';
 import { IronCalc, init, Model } from '@ironcalc/workbook';
 import '@ironcalc/workbook/dist/ironcalc.css';
 import snApi from 'sn-extension-api';
+import wasmUrl from '@ironcalc/wasm/wasm_bg.wasm?url';
 
 interface SpreadsheetData {
   workbook: string; // Base64 encoded workbook data
@@ -98,7 +99,11 @@ const SpreadsheetEditor: React.FC<SpreadsheetEditorProps> = ({ noteVersion, note
 
     (async () => {
       try {
-        await init();
+        const response = await fetch(wasmUrl);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch wasm: ${response.status}`);
+        }
+        await init(await response.arrayBuffer());
         if (!mounted) return;
         // Wait for first streamed note text before loading the model
       } catch (err) {

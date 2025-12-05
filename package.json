@@ -1,6 +1,6 @@
 {
   "name": "sn-ironcalc",
-  "version": "0.3.8",
+  "version": "0.3.9",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -8,6 +8,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@ironcalc/wasm": "0.5.4",
     "@ironcalc/workbook": "^0.5.7",
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
