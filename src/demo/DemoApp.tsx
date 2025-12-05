@@ -75,7 +75,7 @@ const DemoApp = () => {
           </div>
           <div id="last-saved"></div>
         </div>
-        <iframe ref={iframeRef} src="index.html" onLoad={onFrameLoad} />
+        <iframe ref={iframeRef} src="/src/index.html" onLoad={onFrameLoad} />
       </div>
     </div>
   );
